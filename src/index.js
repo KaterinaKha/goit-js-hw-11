@@ -1,32 +1,49 @@
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
-import { refs, API_KEY, URL_PREFIX } from './scripts/models/refs';
+import { refs } from './scripts/models/refs';
 import searchImages from './scripts/searchImages';
+import addImageMarkup from './scripts/models/markups';
 
 refs.formEl.addEventListener('submit', onSerachButtonSubmit);
+refs.loadMorebutton.addEventListener('click', onLoadMoreButtonClick);
+let searchQuery = '';
+let page = 1;
 
 function onSerachButtonSubmit(e) {
   e.preventDefault();
+  clearGallery();
   const input = refs.formEl.elements.searchQuery;
-  let searchQuery = input.value.trim();
-  // console.log(searchQuery);
+  searchQuery = input.value.trim();
 
   if (!searchQuery) return;
+  else {
+    page = 1;
+    searchImages(searchQuery, page)
+      .then(({ data, config }) => {
+        console.log(data, config);
 
-  searchImages(searchQuery)
-    .then(({ data, config }) => {
-      console.log(data);
+        if (data.hits.length === 0) {
+          throw new Error(
+            'Sorry, there are no images matching your search query. Please try again.'
+          );
+        }
 
-      if (data.hits.length === 0) {
-        throw new Error(
-          'Sorry, there are no images matching your search query. Please try again.'
-        );
-      }
+        addImageMarkup(data.hits, refs);
+        Notify.info(`Hooray! We found ${data.totalHits} images.`);
+      })
 
-      // if (data.hits.length > 0) {
-      //   Notify.info(`Hooray! We found ${data.totalHits} images.`);
-      // }
-    })
-    .catch(error => Notify.failure(error.message));
+      .catch(error => Notify.failure(error.message));
 
-  refs.formEl.reset();
+    refs.formEl.reset();
+  }
+}
+
+function clearGallery() {
+  refs.galleryEl.innerHTML = '';
+}
+
+function onLoadMoreButtonClick() {
+  page += 1;
+  searchImages(searchQuery, page).then(({ data, config }) => {
+    addImageMarkup(data.hits, refs, page);
+  });
 }

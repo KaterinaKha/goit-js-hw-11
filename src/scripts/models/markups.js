@@ -1,5 +1,5 @@
-function addImageMarkup(data) {
-  return data
+function addImageMarkup(data, refs, page) {
+  const galleryCard = data
     .map(
       card =>
         ` <div class="photo-card">
@@ -23,4 +23,8 @@ function addImageMarkup(data) {
 </div>`
     )
     .join('');
+
+  refs.galleryEl.insertAdjacentHTML('beforeend', galleryCard);
 }
+
+export default addImageMarkup;
