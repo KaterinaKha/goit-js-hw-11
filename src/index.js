@@ -1,34 +1,60 @@
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
-import { refs } from './scripts/models/refs';
-import searchImages from './scripts/searchImages';
-import addImageMarkup from './scripts/models/markups';
+import { refs } from './scripts/models/refs.js';
+import searchImages from './scripts/searchImages.js';
+import addImageMarkup from './scripts/models/markups.js';
+import LoadMoreBtn from './scripts/components/LoadMoreBtn.js';
 
-refs.formEl.addEventListener('submit', onSerachButtonSubmit);
-refs.loadMorebutton.addEventListener('click', onLoadMoreButtonClick);
 let searchQuery = '';
 let page = 1;
+let totalPages = 0;
+
+const loadMoreBtn = new LoadMoreBtn({
+  selector: '.load-more',
+  isHidden: true,
+});
+
+refs.formEl.addEventListener('submit', onSerachButtonSubmit);
+loadMoreBtn.button.addEventListener('click', onLoadMoreButtonClick);
 
 function onSerachButtonSubmit(e) {
   e.preventDefault();
-  clearGallery();
+
   const input = refs.formEl.elements.searchQuery;
   searchQuery = input.value.trim();
 
-  if (!searchQuery) return;
-  else {
+  loadMoreBtn.show();
+  clearGallery();
+
+  if (!searchQuery) {
+    Notify.failure(
+      'Sorry, there are no images matching your search query. Please try again.'
+    );
+    loadMoreBtn.hide();
+    return;
+  } else {
     page = 1;
     searchImages(searchQuery, page)
-      .then(({ data, config }) => {
-        console.log(data, config);
+      .then(({ data }) => {
+        // console.log(data, config);
 
         if (data.hits.length === 0) {
+          loadMoreBtn.hide();
           throw new Error(
             'Sorry, there are no images matching your search query. Please try again.'
           );
         }
-
+        loadMoreBtn.disable();
         addImageMarkup(data.hits, refs);
+        loadMoreBtn.enable();
         Notify.info(`Hooray! We found ${data.totalHits} images.`);
+
+        totalPages = Math.ceil(data.totalHits / data.perPage);
+        if (totalPages <= page) {
+          Notify.info(
+            "We're sorry, but you've reached the end of search results."
+          );
+          loadMoreBtn.hide();
+        }
       })
 
       .catch(error => Notify.failure(error.message));
@@ -43,7 +69,14 @@ function clearGallery() {
 
 function onLoadMoreButtonClick() {
   page += 1;
-  searchImages(searchQuery, page).then(({ data, config }) => {
-    addImageMarkup(data.hits, refs, page);
-  });
+  searchImages(searchQuery, page)
+    .then(({ data }) => {
+      if (!searchQuery) return;
+      addImageMarkup(data.hits, refs, page);
+
+      if (page >= totalPages) {
+        loadMoreBtn.hide();
+      }
+    })
+    .catch(error => Notify.failure(error.message));
 }

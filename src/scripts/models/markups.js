@@ -1,4 +1,4 @@
-function addImageMarkup(data, refs, page) {
+function addImageMarkup(data, refs) {
   const galleryCard = data
     .map(
       card =>
