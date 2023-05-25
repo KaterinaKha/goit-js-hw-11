@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { API_KEY, URL_PREFIX } from './models/refs';
+import { API_KEY, URL_PREFIX } from './models/data.js';
 
 async function searchImages(searchQuery, page = 1) {
   return await axios({

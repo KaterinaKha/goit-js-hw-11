@@ -1,5 +1,5 @@
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
-import { refs } from './scripts/models/refs.js';
+import { refs } from './scripts/models/data.js';
 import searchImages from './scripts/searchImages.js';
 import addImageMarkup from './scripts/models/markups.js';
 import LoadMoreBtn from './scripts/components/LoadMoreBtn.js';
@@ -25,46 +25,45 @@ function onSerachButtonSubmit(e) {
   loadMoreBtn.show();
   clearGallery();
 
-  if (!searchQuery) {
-    Notify.failure(
-      'Sorry, there are no images matching your search query. Please try again.'
-    );
-    loadMoreBtn.hide();
-    return;
-  } else {
-    page = 1;
-    searchImages(searchQuery, page)
-      .then(({ data, config }) => {
-        console.log(data);
+  // if (!searchQuery) {
+  //   Notify.failure(
+  //     'Sorry, there are no images matching your search query. Please try again.'
+  //   );
+  //   loadMoreBtn.hide();
+  //   return;
+  // } else
 
-        if (data.hits.length === 0) {
-          loadMoreBtn.hide();
-          throw new Error(
-            'Sorry, there are no images matching your search query. Please try again.'
-          );
-        }
-        loadMoreBtn.disable();
-        addImageMarkup(data.hits, refs, page);
-        loadMoreBtn.enable();
-        Notify.info(`Hooray! We found ${data.totalHits} images.`);
+  page = 1;
+  loadMoreBtn.disable();
+  searchImages(searchQuery, page)
+    .then(({ data, config }) => {
+      console.log(data);
 
-        // totalPages = Math.ceil(data.totalHits / 40);
+      if (data.hits.length === 0) {
+        loadMoreBtn.hide();
+        throw new Error(
+          'Sorry, there are no images matching your search query. Please try again.'
+        );
+      }
+      loadMoreBtn.disable();
+      addImageMarkup(data.hits, refs, page);
+      loadMoreBtn.enable();
+      Notify.info(`Hooray! We found ${data.totalHits} images.`);
 
-        if (
-          data.hits.length >= data.totalHits ||
-          data.totalHits / 40 < config.params.page
-        ) {
-          Notify.info(
-            "We're sorry, but you've reached the end of search results."
-          );
-          loadMoreBtn.hide();
-        }
-      })
+      if (
+        data.hits.length >= data.totalHits ||
+        data.totalHits / 40 < config.params.page
+      ) {
+        Notify.info(
+          "We're sorry, but you've reached the end of search results."
+        );
+        loadMoreBtn.hide();
+      }
+    })
 
-      .catch(error => Notify.failure(error.message));
+    .catch(error => Notify.failure(error.message));
 
-    refs.formEl.reset();
-  }
+  refs.formEl.reset();
 }
 
 function clearGallery() {
