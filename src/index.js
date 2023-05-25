@@ -34,8 +34,8 @@ function onSerachButtonSubmit(e) {
   } else {
     page = 1;
     searchImages(searchQuery, page)
-      .then(({ data }) => {
-        // console.log(data, config);
+      .then(({ data, config }) => {
+        console.log(data);
 
         if (data.hits.length === 0) {
           loadMoreBtn.hide();
@@ -44,12 +44,16 @@ function onSerachButtonSubmit(e) {
           );
         }
         loadMoreBtn.disable();
-        addImageMarkup(data.hits, refs);
+        addImageMarkup(data.hits, refs, page);
         loadMoreBtn.enable();
         Notify.info(`Hooray! We found ${data.totalHits} images.`);
 
-        totalPages = Math.ceil(data.totalHits / data.perPage);
-        if (totalPages <= page) {
+        // totalPages = Math.ceil(data.totalHits / 40);
+
+        if (
+          data.hits.length >= data.totalHits ||
+          data.totalHits / 40 < config.params.page
+        ) {
           Notify.info(
             "We're sorry, but you've reached the end of search results."
           );
@@ -70,13 +74,21 @@ function clearGallery() {
 function onLoadMoreButtonClick() {
   page += 1;
   searchImages(searchQuery, page)
-    .then(({ data }) => {
+    .then(({ data, config }) => {
+      console.log(data, config);
       if (!searchQuery) return;
       addImageMarkup(data.hits, refs, page);
+      if (
+        data.hits.length >= data.totalHits ||
+        data.totalHits / 40 < config.params.page
+      ) {
+        Notify.info(
+          "We're sorry, but you've reached the end of search results."
+        );
 
-      if (page >= totalPages) {
         loadMoreBtn.hide();
       }
     })
+
     .catch(error => Notify.failure(error.message));
 }
